@@ -1,5 +1,6 @@
 import { Logo } from '../ui/Logo';
 import { Icon } from '../ui/Icon';
+import { KIOSK_URL } from '../../config/links';
 
 const LINKS = [
   { href: '#dua-arah', label: 'Dua arah' },
@@ -23,10 +24,10 @@ export function Nav() {
           ))}
         </nav>
         <a
-          href="#mulai"
+          href={KIOSK_URL}
           className="inline-flex items-center gap-1.5 rounded-xl bg-brand-900 px-3.5 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-brand-800"
         >
-          Lihat demo
+          Buka kiosk
           <Icon name="arrowUpRight" className="size-3.5" />
         </a>
       </div>

@@ -4,8 +4,7 @@ import { EASE } from '../../animations/tokens';
 import { Icon } from '../ui/Icon';
 import { Logo } from '../ui/Logo';
 
-// URL aplikasi kiosk bisa diisi lewat .env (VITE_KIOSK_URL). Default: kembali ke demo di hero.
-const KIOSK_URL: string = import.meta.env.VITE_KIOSK_URL ?? '#top';
+import { KIOSK_URL } from '../../config/links';
 
 export function Closing() {
   const root = useRef<HTMLElement>(null);
