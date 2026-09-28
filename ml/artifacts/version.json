@@ -1,0 +1,15 @@
+{
+  "version": "20260928-1331",
+  "source_run": "final_demo",
+  "dataset": "WL-BISINDO (wl-bisindo-raw/videos, 1600 clips)",
+  "train_accuracy_all_signers": 1.0,
+  "onnx_parity_max_abs_diff": 2.1457672119140625e-06,
+  "sha256": {
+    "model.onnx": "e029e40a3deff16f776b84ac4c305c084a97affb2346b042723b788e58d60e24",
+    "centroids.npy": "e41d5315fa7481c0c7177a2721caa8d26c7da33f5502b46607729b865ce5b5ee",
+    "feature_config.json": "fa3e56ed60bdf5c0d1502b126494359db0829b5216101351a903649032bd76e2",
+    "model_info.json": "e2bc10db74447e13c1020b707229bbcfeaf01498d25ab7e6cec2162984acd89e",
+    "label_map.json": "6a70bc6ef0ef915cdd50b90f77989cf2f7c32a5bdbba601477ff60fa4bd23c02",
+    "thresholds.json": "63a624425031f457b0317de7dd2d2232c89f9df90bcca13ae3432990f74056ca"
+  }
+}
