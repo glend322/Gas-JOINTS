@@ -1,6 +1,7 @@
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { Hand, MessagesSquare, Mic } from 'lucide-react';
 import { SlideTabs, type SlideTab } from '@/components/ui/slide-tabs';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { FallbackNotices } from '@/components/kiosk/FallbackNotice';
 import { HistoryPanel } from '@/components/kiosk/HistoryPanel';
 import { JbiOverlay } from '@/components/kiosk/JbiOverlay';
@@ -11,6 +12,8 @@ import { SimulatorPanel } from '@/dev/SimulatorPanel';
 import { KioskProvider, useKiosk } from '@/state/KioskContext';
 import type { TabId } from '@/types/kiosk';
 import { isDevMode } from '@/lib/utils';
+
+const PANEL_LABELS: Record<TabId, string> = { pasien: 'Pasien', petugas: 'Petugas', percakapan: 'Riwayat' };
 
 const TITLES: Record<TabId, { eyebrow: string; title: string }> = {
   pasien: { eyebrow: 'Pasien → petugas', title: 'Isyarat jadi teks dan suara' },
@@ -56,9 +59,12 @@ function Kiosk() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
           >
-            {k.tab === 'pasien' && <SignPanel />}
-            {k.tab === 'petugas' && <SpeechPanel />}
-            {k.tab === 'percakapan' && <HistoryPanel />}
+            {/* Satu boundary per panel: crash di satu alur tidak mematikan alur lain (PRD-FE §9). */}
+            <ErrorBoundary label={PANEL_LABELS[k.tab]} resetKey={k.tab}>
+              {k.tab === 'pasien' && <SignPanel />}
+              {k.tab === 'petugas' && <SpeechPanel />}
+              {k.tab === 'percakapan' && <HistoryPanel />}
+            </ErrorBoundary>
           </motion.div>
         </AnimatePresence>
       </main>
@@ -67,9 +73,18 @@ function Kiosk() {
         AI membantu mengenali sejumlah frasa BISINDO yang telah divalidasi untuk skenario layanan Puskesmas.
       </footer>
 
-      <FallbackNotices />
-      <JbiOverlay />
-      {isDevMode() && <SimulatorPanel />}
+      {/* Lapisan notifikasi/overlay: kalau crash cukup menghilang, alur utama tetap jalan. */}
+      <ErrorBoundary level="quiet" label="Notifikasi fallback">
+        <FallbackNotices />
+      </ErrorBoundary>
+      <ErrorBoundary level="quiet" label="Overlay JBI">
+        <JbiOverlay />
+      </ErrorBoundary>
+      {isDevMode() && (
+        <ErrorBoundary level="quiet" label="Simulator">
+          <SimulatorPanel />
+        </ErrorBoundary>
+      )}
     </div>
   );
 }

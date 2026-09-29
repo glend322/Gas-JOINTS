@@ -257,7 +257,7 @@ Kedua alur berjalan independen di device yang sama; hasil dari proses pencocokan
 |---|---|---|
 | **Client** | React + Tailwind CSS | UI kiosk: kamera, indikator status capture, tampilan hasil teks/suara, pemutar video isyarat, animasi transisi antar-state |
 | **Client — capture** | MediaPipe Hands/Holistic | Ekstraksi landmark tangan & pose secara real-time di browser; basis perhitungan state machine auto-capture (§9) |
-| **Client — speech** | Web Speech API (browser) | Speech-to-text (ucapan petugas → teks) dan text-to-speech (teks → suara ke petugas) |
+| **Client — speech** | Web Speech API (browser) | Speech-to-text (ucapan petugas → teks) dan text-to-speech (teks → suara ke  petugas) |
 | **Backend** | Python + FastAPI | Endpoint pencocokan sequence landmark/teks ke frasa referensi, endpoint logging |
 | **Matching engine (isyarat)** | Dynamic Time Warping (DTW) / nearest-neighbor | Membandingkan sequence landmark input dengan beberapa rekaman referensi per frasa, tanpa perlu dataset besar/training deep learning |
 | **Matching engine (teks)** | Sentence embedding + cosine similarity | Semantic matching ucapan petugas ke frasa terdekat (§11) |

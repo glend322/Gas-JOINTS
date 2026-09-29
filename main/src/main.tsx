@@ -3,9 +3,13 @@ import { createRoot } from 'react-dom/client';
 import '@fontsource-variable/plus-jakarta-sans';
 import './index.css';
 import App from './App';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {/* Jaring terakhir (PRD-FE §9): layar kiosk tidak boleh pernah blank. */}
+    <ErrorBoundary level="app" label="Kiosk">
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );

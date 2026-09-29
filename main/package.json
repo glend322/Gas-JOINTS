@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:https": "cross-env VITE_HTTPS=1 vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
@@ -23,7 +24,9 @@
     "@types/node": "26.6.3",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-basic-ssl": "2.3.0",
     "@vitejs/plugin-react": "6.1.1",
+    "cross-env": "10.1.0",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3",
     "vite": "8.3.1"

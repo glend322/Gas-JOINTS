@@ -27,6 +27,7 @@ const STATUS: Record<SignPhase, { text: string; sub: string }> = {
 const dev = isDevMode();
 
 export function SignPanel() {
+  // throw new Error('tes error boundary'); Ini kizana lg ngecheck fitur error boundary, jgn diapa-apain.
   const k = useKiosk();
   const flow = useSignFlow(true);
   // Di ?dev=1 kegagalan kamera tidak memicu fallback otomatis, supaya skenario auto-capture
