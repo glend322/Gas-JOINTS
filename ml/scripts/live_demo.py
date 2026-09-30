@@ -2,7 +2,7 @@
 
 Usage (from ml/):
     .venv\\Scripts\\python.exe scripts\\live_demo.py [--camera 0]
-Keys: q = quit, r = reset to IDLE.
+Keys: q = quit, r = reset to IDLE. Accepted words are spoken (artifacts/audio, --no-audio to mute).
 
 Frames are fed to MediaPipe un-mirrored (like the dataset); only the preview is mirrored.
 """
@@ -20,6 +20,28 @@ from bisindo.extract import Extractor
 from bisindo.predict import Predictor
 from bisindo.schema import empty_arrays
 from bisindo.visualize import draw
+
+
+def play_audio(path) -> None:
+    """Play a WAV without blocking the camera loop (Windows only; silently skipped elsewhere)."""
+    try:
+        import winsound
+        winsound.PlaySound(str(path), winsound.SND_FILENAME | winsound.SND_ASYNC)
+    except (ImportError, RuntimeError):
+        pass
+
+
+ACTION_BG = {"accept": (40, 140, 40), "confirm": (0, 110, 200), "reject": (40, 40, 200)}  # BGR
+
+
+def draw_label(img, text: str, org, bg, scale: float = 1.0, thick: int = 2) -> None:
+    """White text on a solid box so it stays readable on any background."""
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    (tw, th), base = cv2.getTextSize(text, font, scale, thick)
+    x, y = org
+    pad = int(10 * scale)
+    cv2.rectangle(img, (x - pad, y - th - pad), (x + tw + pad, y + base + pad), bg, -1)
+    cv2.putText(img, text, (x, y), font, scale, (255, 255, 255), thick, cv2.LINE_AA)
 
 
 def raised_hands(a: dict, aspect: float, rest_y: float) -> np.ndarray:
@@ -100,6 +122,7 @@ class AutoCapture:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--camera", type=int, default=0)
+    ap.add_argument("--no-audio", action="store_true", help="do not speak recognized words")
     args = ap.parse_args()
     cfg = load_config()
     cap_cfg = cfg["capture"]
@@ -136,6 +159,8 @@ def main() -> None:
             print(json.dumps({k: result.get(k) for k in ("phraseId", "confidence", "action", "latency_ms")}),
                   [(t["label"], t["confidence"]) for t in result["topK"]])
             result_t = time.time()
+            if not args.no_audio and result["action"] == "accept" and result.get("audio"):
+                play_audio(predictor.audio_dir.parent / result["audio"])
             ac.reset()
             frames_a = []
         elif ev == "discard":
@@ -149,10 +174,11 @@ def main() -> None:
         color = (0, 0, 255) if ac.state == "RECORDING" else (200, 200, 200)
         if ac.state == "RECORDING":
             cv2.rectangle(view, (2, 2), (w - 3, h - 3), color, 6)
-        cv2.putText(view, ac.state, (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
+        draw_label(view, ac.state, (20, h - 25), (0, 0, 200) if ac.state == "RECORDING" else (60, 60, 60), 0.8, 2)
         if result and time.time() - result_t < cap_cfg["result_hold_ms"] / 1000:
+            scale = max(1.0, w / 640)
             txt = f"{result['action'].upper()}: {result.get('label') or 'tidak dikenal'} ({result['confidence']:.0%})"
-            cv2.putText(view, txt, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 2)
+            draw_label(view, txt, (20, int(50 * scale)), ACTION_BG[result["action"]], scale, max(2, int(2 * scale)))
         cv2.imshow("BISINDO live demo", view)
         k = cv2.waitKey(1) & 0xFF
         if k == ord("q"):

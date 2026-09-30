@@ -4,7 +4,8 @@
     p = Predictor()                      # loads ml/artifacts/ once (~0.5 s); reuse the instance
     result = p.predict_json(payload)     # payload = dict/JSON in the schema.Sequence format
     # -> {"phraseId": "label_10" | None, "label": "Terima kasih" | None, "confidence": 0.93,
-    #     "action": "accept" | "confirm" | "reject", "reason": ..., "topK": [...], "debug": {...}}
+    #     "action": "accept" | "confirm" | "reject", "audio": "audio/label_10.wav" | None,
+    #     "reason": ..., "topK": [...], "debug": {...}}
 
 `action` already applies the calibrated PRD §10 decision (accept >= 0.85, confirm 0.60–0.84, else reject)
 including out-of-vocabulary rejection. `phraseId`/`label` are None when action == "reject".
@@ -46,6 +47,11 @@ class Predictor:
         self.K = self.info["n_known"]
         self.labels = self.info["known_labels"]
         self.max_frames = max_frames
+        # spoken word per phraseId (scripts/generate_audio.ps1); optional
+        self.audio_dir = d / "audio"
+        idx = self.audio_dir / "index.json"
+        files = json.loads(idx.read_text(encoding="utf-8-sig"))["files"] if idx.exists() else {}
+        self.audio = {pid: f"audio/{v['file']}" for pid, v in files.items() if (self.audio_dir / v["file"]).exists()}
 
     # ----------------------------------------------------------------------------------- metadata
     def vocabulary(self) -> list[dict]:
@@ -65,7 +71,7 @@ class Predictor:
             raise ValueError(f"sequence has {n_frames} frames (max {self.max_frames})")
         n_hand_frames = int(np.asarray(a["hand_mask"]).any(1).sum()) if n_frames else 0
         if n_hand_frames < self.fcfg["min_frames_for_inference"]:
-            return {"phraseId": None, "label": None, "confidence": 0.0, "action": "reject",
+            return {"phraseId": None, "label": None, "confidence": 0.0, "action": "reject", "audio": None,
                     "reason": "too_short", "topK": [], "debug": {}}
         x = featurize(a, self.fcfg)[None]
         logits, emb = self.sess.run(None, {"x": x})
@@ -95,6 +101,8 @@ class Predictor:
             "label": head["label"] if action != "reject" else None,
             "confidence": head["confidence"],
             "action": action,
+            # WAV path relative to artifacts/ (e.g. "audio/label_10.wav"), None on reject / no audio
+            "audio": self.audio.get(head["phraseId"]) if action != "reject" else None,
             "reason": reason,
             "topK": top,
             "debug": {"raw_confidence": round(raw_conf, 4), "centroid_sim": round(sim, 4),
@@ -119,7 +127,7 @@ def main() -> None:
     print("vocabulary:", ", ".join(v["text"] for v in p.vocabulary()))
     for f in map(Path, args.files):
         r = p.predict_json(f.read_bytes()) if f.suffix == ".json" else p.predict_arrays(load_npz(f))
-        print(f.stem, json.dumps({k: r[k] for k in ("phraseId", "label", "confidence", "action", "reason")}, ensure_ascii=False),
+        print(f.stem, json.dumps({k: r[k] for k in ("phraseId", "label", "confidence", "action", "audio", "reason")}, ensure_ascii=False),
               "top:", [(t["label"], t["confidence"]) for t in r["topK"]])
 
 

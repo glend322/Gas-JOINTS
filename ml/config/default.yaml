@@ -94,7 +94,9 @@ calibration:
   unknown_reject_target: 0.90 # fraction of non-sign ("none") movement that must fall below confirm
   unknown_word_prior: 0.10    # assumed share of out-of-vocabulary signs among inputs (for accept precision)
   # which negatives must mostly (unknown_reject_target) land below the confirm threshold
-  confirm_reject_groups: [none, unknown_word, negative_word]
+  # Full 32-word model (deployed): only `none` — no real negative words exist when all words are known.
+  # For the 10-word demo model use [none, unknown_word, negative_word].
+  confirm_reject_groups: [none]
   confirm_min: 0.40
   centroid_known_percentile: 2.0
   # Output contract thresholds (PRD §10 kiosk decision). Calibrated scores are remapped onto these.

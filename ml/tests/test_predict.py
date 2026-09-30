@@ -3,6 +3,7 @@ import json
 import time
 from pathlib import Path
 
+import numpy as np
 import pytest
 from pydantic import ValidationError
 
@@ -74,7 +75,9 @@ def test_demo_words_accepted_and_other_words_rejected(p):
     known = set(p.labels)
     demo = [f for f in sorted(lm.glob("signer3_label*_sample1.npz")) if _label(f) in known]
     other = [f for f in sorted(lm.glob("signer3_label*_sample1.npz")) if _label(f) not in known][:5]
-    assert demo and other
+    assert demo
+    # a full-vocabulary model (all 32 words) has no out-of-vocabulary dataset words to reject
+    assert other or known >= {_label(f) for f in lm.glob("signer3_label*_sample1.npz")}
     t0 = time.perf_counter()
     for f in demo:
         a = load_npz(f)
@@ -84,5 +87,23 @@ def test_demo_words_accepted_and_other_words_rejected(p):
         assert abs(r2["confidence"] - r["confidence"]) < 1e-3
     for f in other:
         assert p.predict_arrays(load_npz(f))["action"] == "reject", f.stem
+    # non-sign movement must still be rejected
+    rng = np.random.default_rng(0)
+    a = load_npz(demo[0])
+    a["hands"] = (a["hands"] + rng.normal(0, 0.05, a["hands"].shape)).astype(a["hands"].dtype)
+    a["hands"] = a["hands"][rng.permutation(len(a["hands"]))]
+    assert p.predict_arrays(a)["action"] != "accept"
     per = (time.perf_counter() - t0) / (2 * len(demo) + len(other)) * 1000
     assert per < 100, f"{per:.1f} ms per sequence"
+
+
+def test_every_word_has_audio(p):
+    import wave
+
+    if not p.audio:
+        pytest.skip("artifacts/audio missing (scripts/generate_audio.ps1)")
+    for v in p.vocabulary():
+        rel = p.audio.get(v["phraseId"])
+        assert rel, v
+        with wave.open(str(ART / rel)) as w:
+            assert w.getnframes() / w.getframerate() > 0.3

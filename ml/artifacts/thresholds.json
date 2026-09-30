@@ -1,10 +1,10 @@
 {
-  "temperature": 0.48400375724693584,
-  "raw_accept": 0.915,
-  "raw_confirm": 0.825,
-  "centroid_sim_min": 0.7404258251190186,
+  "temperature": 0.7614531474195073,
+  "raw_accept": 0.955,
+  "raw_confirm": 0.4,
+  "centroid_sim_min": 0.7296987771987915,
   "kiosk_accept": 0.85,
   "kiosk_confirm": 0.6,
-  "source_run": "demo_loso",
-  "hidden_run": null
+  "source_run": "gru_base",
+  "hidden_run": "gru_hidden"
 }

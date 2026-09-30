@@ -22,8 +22,15 @@ wl-bisindo*/
 *.mp4
 *.avi
 *.mov
-# NOTE: ml/artifacts/ (model.onnx, label_map.json, ...) and ml/mp_models/*.task
-# are intentionally tracked: the backend Predictor needs them at runtime.
+# NOTE: ml/artifacts/ (model.onnx, label_map.json, audio/*.wav, ...) and ml/mp_models/*.task
+# are intentionally tracked: the backend Predictor and kiosk need them at runtime.
+
+# ---- Test / temp output ----
+test-results/
+playwright-report/
+htmlcov/
+.coverage
+*.tmp
 
 # ---- Node / kiosk frontend ----
 node_modules/
