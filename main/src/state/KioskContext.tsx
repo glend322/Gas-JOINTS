@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useSyncExternalStore, type ReactNode } from 'react';
 import { useSpeechOut } from '@/hooks/useSpeechOut';
 import { logsService } from '@/services/logs.service';
+import { conversationStore } from '@/state/conversation.store';
 import type { ConversationItem, FallbackReason, TabId } from '@/types/kiosk';
 import { uid } from '@/lib/utils';
 
@@ -19,7 +20,6 @@ type State = {
   speechActive: boolean;
   signFallback: FallbackReason | null;
   speechFallback: FallbackReason | null;
-  conversation: ConversationItem[];
   textScale: 0 | 1 | 2;
 };
 
@@ -30,18 +30,24 @@ type Action =
   | { type: 'speechActive'; on: boolean }
   | { type: 'signFallback'; reason: FallbackReason | null }
   | { type: 'speechFallback'; reason: FallbackReason | null }
-  | { type: 'say'; item: ConversationItem }
-  | { type: 'clearConversation' }
   | { type: 'textScale' };
 
+const TABS: TabId[] = ['pasien', 'petugas', 'percakapan'];
+
+/** Tab awal boleh ditentukan lewat `?tab=` (dipakai tautan riwayat dari Dashboard Petugas). */
+function initialTab(): TabId {
+  if (typeof window === 'undefined') return 'pasien';
+  const t = new URLSearchParams(window.location.search).get('tab');
+  return TABS.includes(t as TabId) ? (t as TabId) : 'pasien';
+}
+
 const initial: State = {
-  tab: 'pasien',
+  tab: initialTab(),
   escalated: false,
   signRecording: false,
   speechActive: false,
   signFallback: null,
   speechFallback: null,
-  conversation: [],
   textScale: 0,
 };
 
@@ -59,16 +65,14 @@ function reducer(s: State, a: Action): State {
       return { ...s, signFallback: a.reason };
     case 'speechFallback':
       return { ...s, speechFallback: a.reason };
-    case 'say':
-      return { ...s, conversation: [...s.conversation, a.item].slice(-50) };
-    case 'clearConversation':
-      return { ...s, conversation: [] };
     case 'textScale':
       return { ...s, textScale: ((s.textScale + 1) % 3) as State['textScale'] };
   }
 }
 
 type Ctx = State & {
+  /** Riwayat percakapan dari conversationStore (bertahan saat pindah ke dashboard). */
+  conversation: ConversationItem[];
   ttsSpeaking: boolean;
   speak: (text: string) => Promise<void>;
   setTab: (t: TabId) => void;
@@ -88,8 +92,9 @@ const KioskContext = createContext<Ctx | null>(null);
 export function KioskProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initial);
   const tts = useSpeechOut();
+  const conversation = useSyncExternalStore(conversationStore.subscribe, conversationStore.list, conversationStore.list);
 
-  const say = useCallback<Ctx['say']>((item) => dispatch({ type: 'say', item: { ...item, id: uid(), at: Date.now() } }), []);
+  const say = useCallback<Ctx['say']>((item) => conversationStore.add({ ...item, id: uid(), at: Date.now() }), []);
 
   const callJbi = useCallback<Ctx['callJbi']>(
     (direction, phraseId = null, confidence = 0) => {
@@ -109,6 +114,7 @@ export function KioskProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(
     () => ({
       ...state,
+      conversation,
       ttsSpeaking: tts.speaking,
       speak: tts.speak,
       setTab: (tab) => dispatch({ type: 'tab', tab }),
@@ -119,10 +125,10 @@ export function KioskProvider({ children }: { children: ReactNode }) {
       setSignFallback: (reason) => dispatch({ type: 'signFallback', reason }),
       setSpeechFallback: (reason) => dispatch({ type: 'speechFallback', reason }),
       say,
-      clearConversation: () => dispatch({ type: 'clearConversation' }),
+      clearConversation: () => conversationStore.clear(),
       cycleTextScale: () => dispatch({ type: 'textScale' }),
     }),
-    [state, tts.speaking, tts.speak, callJbi, say],
+    [state, conversation, tts.speaking, tts.speak, callJbi, say],
   );
 
   return <KioskContext.Provider value={value}>{children}</KioskContext.Provider>;
