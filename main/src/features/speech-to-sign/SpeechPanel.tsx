@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Info, LoaderCircle, Mic, Send, Square, Video } from 'lucide-react';
+import { Info, Mic, Send, Square, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PhrasePicker } from '@/components/kiosk/PhrasePicker';
 import { ResultCard } from '@/components/kiosk/ResultCard';
@@ -8,6 +8,7 @@ import { officerPhrases } from '@/data/phrases.mock';
 import { useKiosk } from '@/state/KioskContext';
 import { cn } from '@/lib/utils';
 import { SignVideo } from './SignVideo';
+import { FlowSteps, MatchingViz, MicLevel } from './SpeechAnimations';
 import { useSpeechFlow } from './useSpeechFlow';
 
 /**
@@ -62,12 +63,16 @@ export function SpeechPanel() {
               <div className="min-h-12 w-full" aria-live="polite">
                 {f.listening ? (
                   <div className="flex flex-col items-center gap-2">
-                    <span className="flex h-5 items-center gap-1" aria-hidden="true">
-                      {[10, 18, 24, 14, 20, 12, 16].map((h, i) => (
-                        <i key={i} className="block w-1 rounded-full bg-rec anim-bar" style={{ height: h, animationDelay: `${i * 0.08}s` }} />
-                      ))}
-                    </span>
-                    <p className="text-lg font-bold text-brand-900">{f.interim || 'Mendengarkan…'}</p>
+                    <MicLevel active={f.listening} />
+                    <p className="text-lg font-bold text-brand-900">
+                      {f.interim
+                        ? f.interim.split(' ').map((w, i) => (
+                          <motion.span key={`${i}-${w}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mr-[0.25em] inline-block">
+                            {w}
+                          </motion.span>
+                        ))
+                        : 'Mendengarkan…'}
+                    </p>
                   </div>
                 ) : blocked ? (
                   <p id="talk-blocked" className="flex items-center justify-center gap-1.5 text-sm font-semibold text-brand-600">
@@ -119,10 +124,11 @@ export function SpeechPanel() {
 
       {/* ---------- Output ke pasien ---------- */}
       <section aria-label="Tampilan untuk pasien" className="flex flex-col">
+        <FlowSteps phase={f.phase} />
         <AnimatePresence mode="wait">
           {f.phase === 'PLAYING' && f.result?.phraseText ? (
             <motion.div key={`play-${f.result.phraseId}`} exit={{ opacity: 0 }}>
-              <SignVideo text={f.result.phraseText} videoUrl={f.result.videoUrl} onDone={f.onVideoDone} />
+              <SignVideo phraseId={f.result.phraseId} text={f.result.phraseText} videoUrl={f.result.videoUrl} onDone={f.onVideoDone} />
               {f.lastUtterance && f.lastUtterance !== f.result.phraseText && (
                 <p className="mt-3 px-2 text-sm text-muted">
                   Ucapan asli: <span className="font-semibold text-brand-800">“{f.lastUtterance}”</span>
@@ -158,11 +164,7 @@ export function SpeechPanel() {
               className="grid min-h-64 flex-1 place-items-center rounded-3xl border-2 border-dashed border-brand-100 bg-white/60 p-6 text-center"
             >
               {f.phase === 'MATCHING' ? (
-                <div className="flex flex-col items-center gap-3">
-                  <LoaderCircle className="size-8 text-brand-600 anim-spin" aria-hidden="true" />
-                  <p className="text-lg font-extrabold">Mencocokkan makna…</p>
-                  <p className="text-sm text-muted">“{f.lastUtterance}”</p>
-                </div>
+                <MatchingViz utterance={f.lastUtterance} />
               ) : (
                 <div className="flex flex-col items-center gap-3">
                   <span className="grid size-14 place-items-center rounded-2xl bg-brand-50 text-brand-400">

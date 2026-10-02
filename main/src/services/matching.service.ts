@@ -115,7 +115,8 @@ async function simulateNetwork() {
 /** Pengganti embedding untuk mock: proporsi keyword frasa yang muncul di ucapan (cocok prefix). */
 function keywordSimilarity(utterance: string, keywords: string[]) {
   const tokens = utterance.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean);
-  const hit = keywords.filter((k) => tokens.some((t) => t.startsWith(k))).length;
+  // startsWith: "obatnya" cocok "obat". endsWith: "makasih" cocok "kasih".
+  const hit = keywords.filter((k) => tokens.some((t) => t.startsWith(k) || t.endsWith(k))).length;
   return hit / keywords.length;
 }
 

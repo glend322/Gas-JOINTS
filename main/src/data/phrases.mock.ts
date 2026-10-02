@@ -4,7 +4,7 @@
  * - `keywords`: HANYA untuk mock matchText (pengganti embedding). BE asli memakai sentence embedding.
  * - `videoUrl`: diisi URL Supabase Storage. null = placeholder video.
  */
-export type Category = 'Pendaftaran' | 'Keluhan' | 'Obat' | 'Administrasi' | 'Fallback';
+export type Category = 'Sapaan' | 'Pendaftaran' | 'Keluhan' | 'Obat' | 'Administrasi' | 'Fallback';
 
 export type Phrase = {
   id: string;
@@ -16,6 +16,9 @@ export type Phrase = {
 };
 
 export const PHRASES: Phrase[] = [
+  // id = label ML (label_10) → punya animasi kerangka asli di features/skeleton-animation
+  { id: 'label_10', text: 'Terima kasih', category: 'Sapaan', speaker: 'keduanya', keywords: ['kasih'], videoUrl: null },
+
   // Pasien → petugas (isyarat)
   { id: 'p-berobat', text: 'Saya ingin berobat', category: 'Pendaftaran', speaker: 'pasien', keywords: ['ingin', 'berobat'], videoUrl: null },
   { id: 'p-janji', text: 'Saya punya janji', category: 'Pendaftaran', speaker: 'pasien', keywords: ['punya', 'janji'], videoUrl: null },
